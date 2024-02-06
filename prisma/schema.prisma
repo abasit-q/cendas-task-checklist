@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TemplateChecklist {
+  id             Int             @id @default(autoincrement())
+  name           String
+  checklistItems ChecklistItem[]
+  tasks          Task[]
+
+  @@map("templateChecklist")
+}
+
+model ChecklistItem {
+  id            Int               @id @default(autoincrement())
+  name          String
+  taskStatus    String
+  ordinalNumber Int               @default(0)
+  checklistId   Int
+  checklist     TemplateChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@map("checklistItem")
+}
+
+model Task {
+  id             Int               @id @default(autoincrement())
+  name           String
+  taskStatus     String @default("default")
+  checklistId    Int
+  checklist      TemplateChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  taskCheckItems TaskCheckItem[]
+
+  @@map("task")
+}
+
+model TaskCheckItem {
+  id            Int                @id @default(autoincrement())
+  name          String
+  taskId        Int
+  task          Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskStatus    String
+  ordinalNumber Int                @default(0)
+  state         TaskCheckItemState @default(UNCHECKED)
+
+  @@map("taskCheckItem")
+}
+
+enum TaskCheckItemState {
+  CHECKED
+  UNCHECKED
+}
