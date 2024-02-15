@@ -52,35 +52,23 @@ export class TaskService {
     return this.prisma.task.update({ where: { id }, data: { taskStatus } });
   }
 
-  // Determine the task status based on the checked/unchecked taskCheckItem
   async determineTaskStatus(taskId: number): Promise<string> {
-    // Fetch the first unchecked item
-    const firstUncheckedItem = await this.prisma.taskCheckItem.findFirst({
-      where: { state: TaskCheckItemState.UNCHECKED, taskId },
+    const taskCheckItems = await this.prisma.taskCheckItem.findMany({
+      where: { taskId },
       orderBy: { ordinalNumber: 'asc' },
     });
 
-    // If no unchecked item exists, either all items are checked or there are no items in the task
-    if (!firstUncheckedItem) {
-      const lastItem = await this.prisma.taskCheckItem.findFirst({
-        where: { taskId, state: TaskCheckItemState.CHECKED },
-        orderBy: { ordinalNumber: 'desc' },
-      });
-      return lastItem?.taskStatus || 'default';
-    } else {
-      // If there is an unchecked item, fetch a preceeding checked item to get its status
-      const lastCheckedItemBeforeUnchecked =
-        await this.prisma.taskCheckItem.findFirst({
-          where: {
-            taskId,
-            ordinalNumber: { lt: firstUncheckedItem.ordinalNumber },
-            state: TaskCheckItemState.CHECKED,
-          },
-          orderBy: { ordinalNumber: 'desc' },
-        });
+    // Directly return 'default' if there are no items, avoiding further checks
+    if (taskCheckItems.length === 0) return 'default';
 
-      // If the unchecked item was the first on the list, set status to default
-      return lastCheckedItemBeforeUnchecked?.taskStatus || 'default';
-    }
+    const uncheckedItemIndex = taskCheckItems.findIndex(
+      (item) => item.state === TaskCheckItemState.UNCHECKED,
+    );
+
+    return uncheckedItemIndex > 0
+      ? taskCheckItems[uncheckedItemIndex - 1].taskStatus // Getting the preceeding checked item
+      : uncheckedItemIndex === -1
+        ? taskCheckItems[taskCheckItems.length - 1].taskStatus // All items are checked
+        : 'default'; // First item is 'UNCHECKED' or no items
   }
 }

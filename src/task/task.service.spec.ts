@@ -20,6 +20,7 @@ describe('TaskService', () => {
     const prismaServiceMock = {
       taskCheckItem: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
       },
       templateChecklist: {
         findUnique: jest.fn(),
@@ -138,65 +139,83 @@ describe('TaskService', () => {
   });
 
   it('determines task status as "default" when no unchecked items and no last item', async () => {
-    prismaService.taskCheckItem.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null);
+    prismaService.taskCheckItem.findMany.mockResolvedValueOnce([]);
 
     const status = await service.determineTaskStatus(1);
     expect(status).toEqual('default');
-    expect(prismaService.taskCheckItem.findFirst).toHaveBeenCalledTimes(2);
+    expect(prismaService.taskCheckItem.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('determines task status based on the last checked item before the first unchecked item', async () => {
-    prismaService.taskCheckItem.findFirst
-      .mockResolvedValueOnce({
+    const mockTaskCheckItems = [
+      {
         taskStatus: 'red',
         state: TaskCheckItemState.CHECKED,
         taskId: 1,
         ordinalNumber: 1,
-      })
-      .mockResolvedValueOnce({
+      },
+      {
         taskStatus: 'green',
         state: TaskCheckItemState.CHECKED,
         taskId: 1,
         ordinalNumber: 2,
-      });
+      },
+      {
+        taskStatus: 'blue',
+        state: TaskCheckItemState.UNCHECKED,
+        taskId: 1,
+        ordinalNumber: 3,
+      },
+    ];
+
+    prismaService.taskCheckItem.findMany.mockResolvedValue(mockTaskCheckItems);
 
     const status = await service.determineTaskStatus(1);
     expect(status).toEqual('green');
-    expect(prismaService.taskCheckItem.findFirst).toHaveBeenCalledTimes(2);
+    expect(prismaService.taskCheckItem.findMany).toHaveBeenCalledTimes(1);
   });
 
-  it('determines task status based on the last item whan all items are checked', async () => {
-    prismaService.taskCheckItem.findFirst
-      .mockResolvedValueOnce({
+  it('determines task status based on the last item when all items are checked', async () => {
+    const mockTaskCheckItems = [
+      {
         taskStatus: 'red',
         state: TaskCheckItemState.CHECKED,
         taskId: 1,
         ordinalNumber: 1,
-      })
-      .mockResolvedValueOnce({
+      },
+      {
         taskStatus: 'green',
         state: TaskCheckItemState.CHECKED,
         taskId: 1,
         ordinalNumber: 2,
-      });
+      },
+    ];
+    prismaService.taskCheckItem.findMany.mockResolvedValue(mockTaskCheckItems);
 
     const status = await service.determineTaskStatus(1);
     expect(status).toEqual('green');
-    expect(prismaService.taskCheckItem.findFirst).toHaveBeenCalledTimes(2);
+    expect(prismaService.taskCheckItem.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('determines task status as "default" when all items are unchecked', async () => {
-    prismaService.taskCheckItem.findFirst.mockResolvedValueOnce({
-      taskStatus: 'green',
-      state: TaskCheckItemState.UNCHECKED,
-      taskId: 1,
-      ordinalNumber: 2,
-    });
+    const mockTaskCheckItems = [
+      {
+        taskStatus: 'green',
+        state: TaskCheckItemState.UNCHECKED,
+        taskId: 1,
+        ordinalNumber: 1,
+      },
+      {
+        taskStatus: 'blue',
+        state: TaskCheckItemState.UNCHECKED,
+        taskId: 1,
+        ordinalNumber: 2,
+      },
+    ];
+    prismaService.taskCheckItem.findMany.mockResolvedValue(mockTaskCheckItems);
 
     const status = await service.determineTaskStatus(1);
     expect(status).toEqual('default');
-    expect(prismaService.taskCheckItem.findFirst).toHaveBeenCalledTimes(2);
+    expect(prismaService.taskCheckItem.findMany).toHaveBeenCalledTimes(1);
   });
 });
