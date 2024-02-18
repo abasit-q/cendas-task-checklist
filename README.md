@@ -72,7 +72,7 @@ Navigate to `http://localhost:[PORT]/api-doc` after running the dev server to ac
 ## Time Log
 
 - Code: 4 hours
-- Unit tests / test coverage: 4 hours
+- Unit tests/tests coverage: 4 hours
 - Total Time: 8 hours
 
 ## Demo
